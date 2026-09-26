@@ -30,8 +30,11 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - run: composer global require moodlehq/moodle-plugin-ci:^4
-      - run: echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+      - name: Install moodle-plugin-ci
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
+          echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
       - name: Verify exact Moodle release
         shell: bash
@@ -57,8 +60,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
-      - run: composer global require moodlehq/moodle-plugin-ci:^4
-      - run: echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+      - name: Install moodle-plugin-ci
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
+          echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
       - name: Verify exact Moodle release
         shell: bash
