@@ -12,7 +12,9 @@ jobs:
     services:
       postgres:
         image: postgres:14
-        env: {POSTGRES_USER: moodle, POSTGRES_PASSWORD: moodle, POSTGRES_DB: moodle}
+        # moodle-plugin-ci creates the test database itself. Only pre-create the
+        # administrative database so its CREATE DATABASE command cannot collide.
+        env: {POSTGRES_USER: moodle, POSTGRES_PASSWORD: moodle, POSTGRES_DB: postgres}
         ports: ['5432:5432']
         options: --health-cmd "pg_isready -U moodle" --health-interval 10s --health-timeout 5s --health-retries 5
     env: {MOODLE_BRANCH: MOODLE_400_STABLE}
