@@ -1,0 +1,26 @@
+name: Compatibility
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+permissions:
+  contents: read
+jobs:
+  minimum:
+    name: Moodle 4.0 / PHP 8.0
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: postgres:14
+        env: {POSTGRES_USER: moodle, POSTGRES_PASSWORD: moodle, POSTGRES_DB: moodle}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U moodle" --health-interval 10s --health-timeout 5s --health-retries 5
+    env: {MOODLE_BRANCH: MOODLE_400_STABLE}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.0', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
+      - run: composer global require moodlehq/moodle-plugin-ci:^4
+      - run: echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=moodle --db-pass=moodle
+      - run: moodle-plugin-ci phplint && moodle-plugin-ci validate && moodle-plugin-ci phpunit

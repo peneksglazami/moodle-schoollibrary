@@ -1,0 +1,70 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+env:
+  MOODLE_BRANCH: db07c09afc52f67a7fa3dc41ba1707ed7f99b58a
+jobs:
+  static:
+    name: static
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', coverage: none}
+      - run: find . -path ./.git -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+  phpunit:
+    name: phpunit-moodle-4.4.1
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:15
+        env: {POSTGRES_USER: schoollibrary, POSTGRES_PASSWORD: schoollibrary, POSTGRES_DB: schoollibrary}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U schoollibrary" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: composer global require moodlehq/moodle-plugin-ci:^4
+      - run: echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
+      - name: Verify exact Moodle release
+        shell: bash
+        run: |
+          source dev/versions.env
+          actual="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
+          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actual"
+          test "$actual" = "$MOODLE_RELEASE"
+      - run: moodle-plugin-ci phplint && moodle-plugin-ci phpcs && moodle-plugin-ci phpdoc && moodle-plugin-ci validate && moodle-plugin-ci phpunit
+  behat:
+    name: behat-moodle-4.4.1
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:15
+        env: {POSTGRES_USER: schoollibrary, POSTGRES_PASSWORD: schoollibrary, POSTGRES_DB: schoollibrary}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U schoollibrary" --health-interval 10s --health-timeout 5s --health-retries 5
+      selenium:
+        image: selenium/standalone-chrome:latest
+        ports: ['4444:4444']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
+      - run: composer global require moodlehq/moodle-plugin-ci:^4
+      - run: echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
+      - name: Verify exact Moodle release
+        shell: bash
+        run: |
+          source dev/versions.env
+          actual="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
+          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actual"
+          test "$actual" = "$MOODLE_RELEASE"
+      - run: moodle-plugin-ci behat --tags=@mod_schoollibrary
