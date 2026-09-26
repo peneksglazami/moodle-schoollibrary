@@ -6,7 +6,10 @@ on:
 permissions:
   contents: read
 env:
-  MOODLE_BRANCH: db07c09afc52f67a7fa3dc41ba1707ed7f99b58a
+  # moodle-plugin-ci passes this value to `git clone --branch`, which requires
+  # a branch or tag name. The annotated v4.4.1 tag resolves to the immutable
+  # commit recorded in dev/versions.env.
+  MOODLE_BRANCH: v4.4.1
 jobs:
   static:
     name: static
@@ -28,7 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
+        with:
+          php-version: '8.3'
+          extensions: pgsql, intl, mbstring, soap, zip, gd
+          coverage: none
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Install moodle-plugin-ci
         run: |
@@ -36,13 +42,16 @@ jobs:
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
-      - name: Verify exact Moodle release
+      - name: Verify exact Moodle checkout
         shell: bash
         run: |
           source dev/versions.env
-          actual="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
-          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actual"
-          test "$actual" = "$MOODLE_RELEASE"
+          actualrelease="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
+          actualref="$(git -C "$MOODLE_DIR" rev-parse HEAD)"
+          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actualrelease"
+          printf 'Expected Moodle commit:  %s\nActual Moodle commit:    %s\n' "$MOODLE_GIT_REF" "$actualref"
+          test "$actualrelease" = "$MOODLE_RELEASE"
+          test "$actualref" = "$MOODLE_GIT_REF"
       - run: moodle-plugin-ci phplint && moodle-plugin-ci phpcs && moodle-plugin-ci phpdoc && moodle-plugin-ci validate && moodle-plugin-ci phpunit
   behat:
     name: behat-moodle-4.4.1
@@ -59,18 +68,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: {php-version: '8.3', extensions: pgsql, intl, mbstring, soap, zip, gd, coverage: none}
+        with:
+          php-version: '8.3'
+          extensions: pgsql, intl, mbstring, soap, zip, gd
+          coverage: none
       - name: Install moodle-plugin-ci
         run: |
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
-      - name: Verify exact Moodle release
+      - name: Verify exact Moodle checkout
         shell: bash
         run: |
           source dev/versions.env
-          actual="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
-          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actual"
-          test "$actual" = "$MOODLE_RELEASE"
+          actualrelease="$(php dev/read-moodle-release.php "$MOODLE_DIR/version.php")"
+          actualref="$(git -C "$MOODLE_DIR" rev-parse HEAD)"
+          printf 'Expected Moodle release: %s\nActual Moodle release:   %s\n' "$MOODLE_RELEASE" "$actualrelease"
+          printf 'Expected Moodle commit:  %s\nActual Moodle commit:    %s\n' "$MOODLE_GIT_REF" "$actualref"
+          test "$actualrelease" = "$MOODLE_RELEASE"
+          test "$actualref" = "$MOODLE_GIT_REF"
       - run: moodle-plugin-ci behat --tags=@mod_schoollibrary
