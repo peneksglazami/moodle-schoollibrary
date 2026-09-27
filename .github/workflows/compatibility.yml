@@ -14,9 +14,9 @@ jobs:
         image: postgres:14
         # moodle-plugin-ci creates the test database itself. Only pre-create the
         # administrative database so its CREATE DATABASE command cannot collide.
-        env: {POSTGRES_USER: moodle, POSTGRES_PASSWORD: moodle, POSTGRES_DB: postgres}
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres}
         ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U moodle" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
     env: {MOODLE_BRANCH: MOODLE_400_STABLE}
     steps:
       - uses: actions/checkout@v4
@@ -25,10 +25,11 @@ jobs:
           php-version: '8.0'
           extensions: pgsql, intl, mbstring, soap, zip, gd
           coverage: none
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Install moodle-plugin-ci
         run: |
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=moodle --db-pass=moodle
+      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=postgres --db-pass=postgres
       - run: moodle-plugin-ci phplint && moodle-plugin-ci validate && moodle-plugin-ci phpunit

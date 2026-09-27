@@ -27,9 +27,9 @@ jobs:
         image: postgres:15
         # moodle-plugin-ci creates the test database itself. Only pre-create the
         # administrative database so its CREATE DATABASE command cannot collide.
-        env: {POSTGRES_USER: schoollibrary, POSTGRES_PASSWORD: schoollibrary, POSTGRES_DB: postgres}
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres}
         ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U schoollibrary" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -43,7 +43,7 @@ jobs:
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
+      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
       - name: Verify exact Moodle checkout
         shell: bash
         run: |
@@ -63,9 +63,9 @@ jobs:
         image: postgres:15
         # moodle-plugin-ci creates the test database itself. Only pre-create the
         # administrative database so its CREATE DATABASE command cannot collide.
-        env: {POSTGRES_USER: schoollibrary, POSTGRES_PASSWORD: schoollibrary, POSTGRES_DB: postgres}
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres}
         ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U schoollibrary" --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
       selenium:
         image: selenium/standalone-chrome:latest
         ports: ['4444:4444']
@@ -76,12 +76,13 @@ jobs:
           php-version: '8.3'
           extensions: pgsql, intl, mbstring, soap, zip, gd
           coverage: none
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Install moodle-plugin-ci
         run: |
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=schoollibrary --db-pass=schoollibrary
+      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
       - name: Verify exact Moodle checkout
         shell: bash
         run: |
