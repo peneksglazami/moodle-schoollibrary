@@ -1,0 +1,37 @@
+name: Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * 1'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  moodle-4-0:
+    name: Moodle 4.0.12 / PHP 8.0
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: postgres:14
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.0', coverage: none, tools: composer}
+      - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_40_GIT_TAG" --moodle=../moodle
+        env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_40_GIT_REF"
+      - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_40_RELEASE"
+      - run: moodle-plugin-ci phpunit

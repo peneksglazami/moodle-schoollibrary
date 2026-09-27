@@ -1,0 +1,39 @@
+name: Development task
+description: A small, independently verifiable School Library change
+title: "[Development]: "
+labels: [development]
+body:
+  - type: textarea
+    id: problem
+    attributes: {label: Problem / feature, description: What user or engineering problem is being solved?}
+    validations: {required: true}
+  - type: input
+    id: requirements
+    attributes: {label: Relevant requirements sections, placeholder: "docs/TZ.md sections 4 and 15"}
+    validations: {required: true}
+  - type: textarea
+    id: scope
+    attributes: {label: Scope}
+    validations: {required: true}
+  - type: textarea
+    id: outofscope
+    attributes: {label: Out of scope}
+    validations: {required: true}
+  - type: textarea
+    id: acceptance
+    attributes: {label: Acceptance criteria, description: Use independently testable checklist items.}
+    validations: {required: true}
+  - type: textarea
+    id: phpunit
+    attributes: {label: Required PHPUnit tests}
+  - type: textarea
+    id: behat
+    attributes: {label: Required Behat tests}
+  - type: textarea
+    id: browser
+    attributes: {label: Manual / browser verification}
+  - type: textarea
+    id: compatibility
+    attributes: {label: Moodle 4.4.1 compatibility considerations, description: Identify APIs and behavior that must be checked on exactly Moodle 4.4.1 with PHP 8.3.}
+    validations: {required: true}
+

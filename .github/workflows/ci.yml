@@ -1,0 +1,111 @@
+name: Primary CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  DB: pgsql
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+      - name: Load pinned versions
+        run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
+      - name: Install pinned Moodle
+        run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
+        env: {DB_USER: postgres, DB_PASS: postgres}
+      - name: Verify exact Moodle commit
+        run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
+      - name: Verify exact Moodle release
+        run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
+      - name: Validate plugin
+        run: |
+          moodle-plugin-ci phplint
+          moodle-plugin-ci phpcs
+          moodle-plugin-ci phpdoc
+          moodle-plugin-ci validate
+          moodle-plugin-ci savepoints
+
+  phpunit-moodle-4-4-1:
+    name: PHPUnit — Moodle 4.4.1 / PHP 8.3 (release-blocking)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', coverage: none, tools: composer}
+      - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
+        env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
+      - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
+      - run: moodle-plugin-ci phpunit --fail-on-warning
+
+  behat-moodle-4-4-1:
+    name: Behat smoke — Moodle 4.4.1 / PHP 8.3 (release-blocking)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      selenium:
+        image: selenium/standalone-firefox:latest
+        ports: ['4444:4444']
+        options: --shm-size=2gb
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.3', coverage: none, tools: composer}
+      - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
+        env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
+      - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
+      - run: moodle-plugin-ci behat --tags=@mod_schoollibrary
