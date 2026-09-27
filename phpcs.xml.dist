@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<ruleset name="mod_schoollibrary">
+  <description>Moodle coding standards for production and test PHP.</description>
+  <rule ref="moodle"/>
+  <file>version.php</file>
+  <file>lib.php</file>
+  <file>mod_form.php</file>
+  <file>view.php</file>
+  <file>index.php</file>
+  <file>db</file>
+  <file>lang</file>
+  <file>tests</file>
+</ruleset>
