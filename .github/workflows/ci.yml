@@ -33,7 +33,10 @@ jobs:
       - name: Load pinned versions
         run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
       - name: Install Moodle plugin CI
-        run: composer global require moodlehq/moodle-plugin-ci:^4
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
       - name: Install pinned Moodle
         run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
@@ -65,7 +68,11 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with: {php-version: '8.3', coverage: none, tools: composer}
       - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
-      - run: composer global require moodlehq/moodle-plugin-ci:^4
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
       - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
@@ -92,7 +99,11 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with: {php-version: '8.3', coverage: none, tools: composer}
       - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
-      - run: composer global require moodlehq/moodle-plugin-ci:^4
+      - name: Install Moodle plugin CI
+        run: |
+          composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci ../moodle-plugin-ci ^4
+          echo "$(cd ../moodle-plugin-ci/bin && pwd)" >> "$GITHUB_PATH"
+          echo "$(cd ../moodle-plugin-ci/vendor/bin && pwd)" >> "$GITHUB_PATH"
       - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
       - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
