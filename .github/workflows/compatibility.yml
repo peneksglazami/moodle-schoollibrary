@@ -19,7 +19,9 @@ jobs:
         options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       MOODLE_BRANCH: MOODLE_400_STABLE
-      MOODLE_DIR: ${{ runner.temp }}/moodle
+      # Keep this a literal path: the `runner` context is unavailable while
+      # GitHub validates job-level environment expressions.
+      MOODLE_DIR: /tmp/moodle
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2

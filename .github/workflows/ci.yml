@@ -13,7 +13,10 @@ env:
   # Keep the install and exact-release verification on one explicit path.
   # Environment changes made inside moodle-plugin-ci cannot propagate to the
   # next GitHub Actions step.
-  MOODLE_DIR: ${{ runner.temp }}/moodle
+  # `runner` is not an available expression context at workflow scope. Using
+  # its temporary-directory expression here makes GitHub reject the workflow
+  # before it can create any jobs.
+  MOODLE_DIR: /tmp/moodle
 jobs:
   static:
     name: static
