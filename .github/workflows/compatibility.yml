@@ -17,7 +17,9 @@ jobs:
         env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: postgres}
         ports: ['5432:5432']
         options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
-    env: {MOODLE_BRANCH: MOODLE_400_STABLE}
+    env:
+      MOODLE_BRANCH: MOODLE_400_STABLE
+      MOODLE_DIR: ${{ runner.temp }}/moodle
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -31,5 +33,5 @@ jobs:
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=postgres --db-pass=postgres
+      - run: moodle-plugin-ci install --moodle="$MOODLE_DIR" --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=postgres --db-pass=postgres
       - run: moodle-plugin-ci phplint && moodle-plugin-ci validate && moodle-plugin-ci phpunit

@@ -10,6 +10,10 @@ env:
   # a branch or tag name. The annotated v4.4.1 tag resolves to the immutable
   # commit recorded in dev/versions.env.
   MOODLE_BRANCH: v4.4.1
+  # Keep the install and exact-release verification on one explicit path.
+  # Environment changes made inside moodle-plugin-ci cannot propagate to the
+  # next GitHub Actions step.
+  MOODLE_DIR: ${{ runner.temp }}/moodle
 jobs:
   static:
     name: static
@@ -43,7 +47,7 @@ jobs:
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
+      - run: moodle-plugin-ci install --moodle="$MOODLE_DIR" --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
       - name: Verify exact Moodle checkout
         shell: bash
         run: |
@@ -82,7 +86,7 @@ jobs:
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
+      - run: moodle-plugin-ci install --moodle="$MOODLE_DIR" --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=schoollibrary --db-user=postgres --db-pass=postgres
       - name: Verify exact Moodle checkout
         shell: bash
         run: |
