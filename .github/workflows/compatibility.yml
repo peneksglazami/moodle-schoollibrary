@@ -27,13 +27,19 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.0'
-          extensions: pgsql, intl, mbstring, soap, zip, gd
+          extensions: pgsql, intl, mbstring, soap, zip, gd, sodium
+          ini-values: max_input_vars=5000, opcache.enable_cli=1
           coverage: none
-      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Prepare Moodle runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client locales
+          sudo locale-gen en_AU.UTF-8
+          echo "NVM_DIR=$HOME/.nvm" >> "$GITHUB_ENV"
       - name: Install moodle-plugin-ci
         run: |
           composer create-project --no-interaction --no-dev --prefer-dist moodlehq/moodle-plugin-ci "$RUNNER_TEMP/moodle-plugin-ci" ^4
           echo "$RUNNER_TEMP/moodle-plugin-ci/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/moodle-plugin-ci/vendor/bin" >> "$GITHUB_PATH"
-      - run: moodle-plugin-ci install --moodle="$MOODLE_DIR" --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=postgres --db-pass=postgres
+      - run: moodle-plugin-ci install --moodle="$MOODLE_DIR" --data="$RUNNER_TEMP/moodledata" --plugin="$GITHUB_WORKSPACE" --db-type=pgsql --db-host=127.0.0.1 --db-name=moodle --db-user=postgres --db-pass=postgres
       - run: moodle-plugin-ci phplint && moodle-plugin-ci validate && moodle-plugin-ci phpunit
