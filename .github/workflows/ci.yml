@@ -15,6 +15,14 @@ jobs:
   static:
     name: Static checks
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s
+          --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -27,7 +35,10 @@ jobs:
       - name: Install Moodle plugin CI
         run: composer global require moodlehq/moodle-plugin-ci:^4
       - name: Install pinned Moodle
-        run: moodle-plugin-ci install --db-type=pgsql --moodle="$MOODLE_GIT_REF"
+        run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
+        env: {DB_USER: postgres, DB_PASS: postgres}
+      - name: Verify exact Moodle commit
+        run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
       - name: Verify exact Moodle release
         run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
       - name: Validate plugin
@@ -55,8 +66,9 @@ jobs:
         with: {php-version: '8.3', coverage: none, tools: composer}
       - run: cat dev/versions.env >> "$GITHUB_ENV"
       - run: composer global require moodlehq/moodle-plugin-ci:^4
-      - run: moodle-plugin-ci install --db-type=pgsql --moodle="$MOODLE_GIT_REF"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
       - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
       - run: moodle-plugin-ci phpunit --fail-on-warning
 
@@ -81,7 +93,8 @@ jobs:
         with: {php-version: '8.3', coverage: none, tools: composer}
       - run: cat dev/versions.env >> "$GITHUB_ENV"
       - run: composer global require moodlehq/moodle-plugin-ci:^4
-      - run: moodle-plugin-ci install --db-type=pgsql --moodle="$MOODLE_GIT_REF"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_GIT_REF"
       - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_RELEASE"
       - run: moodle-plugin-ci behat --tags=@mod_schoollibrary

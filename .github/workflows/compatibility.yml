@@ -26,8 +26,8 @@ jobs:
         with: {php-version: '8.0', coverage: none, tools: composer}
       - run: cat dev/versions.env >> "$GITHUB_ENV"
       - run: composer global require moodlehq/moodle-plugin-ci:^4
-      - run: moodle-plugin-ci install --db-type=pgsql --moodle="$MOODLE_40_GIT_REF"
+      - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_40_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
+      - run: test "$(git -C ../moodle rev-parse HEAD)" = "$MOODLE_40_GIT_REF"
       - run: php dev/ci-verify-release.php ../moodle/version.php "$MOODLE_40_RELEASE"
       - run: moodle-plugin-ci phpunit
-
