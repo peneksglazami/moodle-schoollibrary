@@ -21,10 +21,10 @@ jobs:
         ports: ['5432:5432']
         options: --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with: {php-version: '8.0', coverage: none, tools: composer}
-      - run: cat dev/versions.env >> "$GITHUB_ENV"
+      - run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' dev/versions.env >> "$GITHUB_ENV"
       - run: composer global require moodlehq/moodle-plugin-ci:^4
       - run: moodle-plugin-ci install --db-type=pgsql --branch="$MOODLE_40_GIT_TAG" --moodle=../moodle
         env: {DB_USER: postgres, DB_PASS: postgres}
